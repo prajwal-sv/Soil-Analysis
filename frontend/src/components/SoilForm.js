@@ -97,210 +97,190 @@ const SoilForm = ({ setResults, setLoading, setError }) => {
           <label className="form-label">
             Soil Image
           </label>
-          <div className="upload-area">
-            <div className="upload-content">
-              {imagePreview ? (
-                <div>
-                  <img
-                    src={imagePreview}
-                    alt="Soil preview"
-                    className="upload-preview"
+          <div className="file-input-container">
+            {imagePreview ? (
+              <div>
+                <img
+                  src={imagePreview}
+                  alt="Soil preview"
+                  style={{ maxWidth: '100%', maxHeight: '200px', marginBottom: '10px' }}
+                />
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setImage(null);
+                    setImagePreview(null);
+                  }}
+                  className="upload-button"
+                  style={{ backgroundColor: '#f44336' }}
+                >
+                  Remove Image
+                </button>
+              </div>
+            ) : (
+              <div>
+                <label
+                  htmlFor="image-upload"
+                  className="upload-button"
+                >
+                  <span>Upload Soil Image</span>
+                  <input
+                    id="image-upload"
+                    name="image-upload"
+                    type="file"
+                    style={{ display: 'none' }}
+                    accept="image/*"
+                    onChange={handleImageChange}
                   />
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setImage(null);
-                      setImagePreview(null);
-                    }}
-                    className="remove-button"
-                  >
-                    Remove image
-                  </button>
+                </label>
+                <div className="file-name">
+                  {image ? image.name : 'No file selected'}
                 </div>
-              ) : (
-                <>
-                  <svg
-                    className="upload-icon"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <div className="upload-text">
-                    <label
-                      htmlFor="image-upload"
-                      className="upload-button"
-                    >
-                      <span>Upload a file</span>
-                      <input
-                        id="image-upload"
-                        name="image-upload"
-                        type="file"
-                        style={{ display: 'none' }}
-                        accept="image/*"
-                        onChange={handleImageChange}
-                      />
-                    </label>
-                    <p>or drag and drop</p>
-                  </div>
-                  <p>PNG, JPG, GIF up to 10MB</p>
-                </>
-              )}
-            </div>
+              </div>
+            )}
           </div>
           {formErrors.image && (
-            <p className="form-error">{formErrors.image}</p>
+            <p className="error-message">{formErrors.image}</p>
           )}
         </div>
 
-        <div className="form-grid">
-          <div className="form-group">
-            <label htmlFor="nitrogen" className="form-label">
-              Nitrogen (N)
-            </label>
-            <input
-              type="number"
-              name="nitrogen"
-              id="nitrogen"
-              value={formData.nitrogen}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="e.g., 40"
-            />
-            {formErrors.nitrogen && (
-              <p className="form-error">{formErrors.nitrogen}</p>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="phosphorus" className="form-label">
-              Phosphorus (P)
-            </label>
-            <input
-              type="number"
-              name="phosphorus"
-              id="phosphorus"
-              value={formData.phosphorus}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="e.g., 30"
-            />
-            {formErrors.phosphorus && (
-              <p className="form-error">{formErrors.phosphorus}</p>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="potassium" className="form-label">
-              Potassium (K)
-            </label>
-            <input
-              type="number"
-              name="potassium"
-              id="potassium"
-              value={formData.potassium}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="e.g., 35"
-            />
-            {formErrors.potassium && (
-              <p className="form-error">{formErrors.potassium}</p>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="ph" className="form-label">
-              pH Value
-            </label>
-            <input
-              type="number"
-              name="ph"
-              id="ph"
-              value={formData.ph}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="e.g., 6.5"
-              step="0.1"
-              min="0"
-              max="14"
-            />
-            {formErrors.ph && (
-              <p className="form-error">{formErrors.ph}</p>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="rainfall" className="form-label">
-              Rainfall (mm)
-            </label>
-            <input
-              type="number"
-              name="rainfall"
-              id="rainfall"
-              value={formData.rainfall}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="e.g., 200"
-            />
-            {formErrors.rainfall && (
-              <p className="form-error">{formErrors.rainfall}</p>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="humidity" className="form-label">
-              Humidity (%)
-            </label>
-            <input
-              type="number"
-              name="humidity"
-              id="humidity"
-              value={formData.humidity}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="e.g., 65"
-              min="0"
-              max="100"
-            />
-            {formErrors.humidity && (
-              <p className="form-error">{formErrors.humidity}</p>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="temperature" className="form-label">
-              Temperature (°C)
-            </label>
-            <input
-              type="number"
-              name="temperature"
-              id="temperature"
-              value={formData.temperature}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="e.g., 25"
-            />
-            {formErrors.temperature && (
-              <p className="form-error">{formErrors.temperature}</p>
-            )}
-          </div>
+        <div className="form-group">
+          <label htmlFor="nitrogen" className="form-label">
+            Nitrogen (N)
+          </label>
+          <input
+            type="number"
+            name="nitrogen"
+            id="nitrogen"
+            value={formData.nitrogen}
+            onChange={handleChange}
+            className="form-input"
+            placeholder="e.g., 40"
+          />
+          {formErrors.nitrogen && (
+            <p className="error-message">{formErrors.nitrogen}</p>
+          )}
         </div>
 
-        <div style={{ textAlign: 'right', marginTop: '1.5rem' }}>
-          <button
-            type="submit"
-            className="button button-primary"
-          >
-            Analyze Soil
-          </button>
+        <div className="form-group">
+          <label htmlFor="phosphorus" className="form-label">
+            Phosphorus (P)
+          </label>
+          <input
+            type="number"
+            name="phosphorus"
+            id="phosphorus"
+            value={formData.phosphorus}
+            onChange={handleChange}
+            className="form-input"
+            placeholder="e.g., 30"
+          />
+          {formErrors.phosphorus && (
+            <p className="error-message">{formErrors.phosphorus}</p>
+          )}
         </div>
+
+        <div className="form-group">
+          <label htmlFor="potassium" className="form-label">
+            Potassium (K)
+          </label>
+          <input
+            type="number"
+            name="potassium"
+            id="potassium"
+            value={formData.potassium}
+            onChange={handleChange}
+            className="form-input"
+            placeholder="e.g., 35"
+          />
+          {formErrors.potassium && (
+            <p className="error-message">{formErrors.potassium}</p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="ph" className="form-label">
+            pH Value
+          </label>
+          <input
+            type="number"
+            name="ph"
+            id="ph"
+            value={formData.ph}
+            onChange={handleChange}
+            className="form-input"
+            placeholder="e.g., 6.5"
+            step="0.1"
+            min="0"
+            max="14"
+          />
+          {formErrors.ph && (
+            <p className="error-message">{formErrors.ph}</p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="rainfall" className="form-label">
+            Rainfall (mm)
+          </label>
+          <input
+            type="number"
+            name="rainfall"
+            id="rainfall"
+            value={formData.rainfall}
+            onChange={handleChange}
+            className="form-input"
+            placeholder="e.g., 200"
+          />
+          {formErrors.rainfall && (
+            <p className="error-message">{formErrors.rainfall}</p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="humidity" className="form-label">
+            Humidity (%)
+          </label>
+          <input
+            type="number"
+            name="humidity"
+            id="humidity"
+            value={formData.humidity}
+            onChange={handleChange}
+            className="form-input"
+            placeholder="e.g., 65"
+            min="0"
+            max="100"
+          />
+          {formErrors.humidity && (
+            <p className="error-message">{formErrors.humidity}</p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="temperature" className="form-label">
+            Temperature (°C)
+          </label>
+          <input
+            type="number"
+            name="temperature"
+            id="temperature"
+            value={formData.temperature}
+            onChange={handleChange}
+            className="form-input"
+            placeholder="e.g., 25"
+          />
+          {formErrors.temperature && (
+            <p className="error-message">{formErrors.temperature}</p>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          className="submit-button"
+        >
+          Analyze Soil
+        </button>
       </form>
     </div>
   );

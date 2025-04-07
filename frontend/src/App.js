@@ -8,35 +8,27 @@ function App() {
   const [error, setError] = useState(null);
 
   return (
-    <div>
-      <header className="header">
-        <h1>Soil Analysis</h1>
+    <div className="container">
+      <header className="app-header">
+        <h1 className="app-title">Soil Analysis</h1>
+        <p className="app-subtitle">Analyze soil samples and get crop recommendations</p>
       </header>
-      <main>
-        <div className="container">
-          <div className="grid">
-            <div className="card">
-              <SoilForm 
-                setResults={setResults} 
-                setLoading={setLoading} 
-                setError={setError} 
-              />
-            </div>
-            <div className="card">
-              <Results 
-                results={results} 
-                loading={loading} 
-                error={error} 
-              />
-            </div>
-          </div>
+      <main className="app-main">
+        <div className="soil-form">
+          <SoilForm 
+            setResults={setResults} 
+            setLoading={setLoading} 
+            setError={setError} 
+          />
+        </div>
+        <div className="results-container">
+          <Results 
+            results={results} 
+            loading={loading} 
+            error={error} 
+          />
         </div>
       </main>
-      <footer className="footer">
-        <p className="footer-text">
-          Soil Analysis Application &copy; {new Date().getFullYear()}
-        </p>
-      </footer>
     </div>
   );
 }
