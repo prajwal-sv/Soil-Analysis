@@ -36,7 +36,7 @@ class PredictSoilTypeView(APIView):
             soil_analyzer = SoilAnalyzer()
             
             # Predict soil type from image
-            soil_type = soil_analyzer.predict_soil_type(validated_data['image'])
+            soil_type = soil_analyzer.analyze_soil_image(validated_data['image'])
             
             # Get recommended crop based on soil type and parameters
             recommended_crop = soil_analyzer.recommend_crop(

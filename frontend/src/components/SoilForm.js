@@ -74,7 +74,11 @@ const SoilForm = ({ setResults, setLoading, setError }) => {
     });
 
     try {
-      const response = await axios.post('http://0.0.0.0:8000/api/predict/', submitData, {
+      // Using window.location.hostname instead of hardcoded IP
+      const backendUrl = 'http://127.0.0.1:8000/api/predict/';
+      console.log('Sending request to:', backendUrl);
+      
+      const response = await axios.post(backendUrl, submitData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

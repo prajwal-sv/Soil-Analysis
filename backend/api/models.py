@@ -4,13 +4,6 @@ from django.db import models
 class SoilAnalysis(models.Model):
     """Model to store soil analysis results"""
     
-    SOIL_TYPE_CHOICES = (
-        ('Red', 'Red Soil'),
-        ('Clay', 'Clay Soil'),
-        ('Black', 'Black Soil'),
-        ('Alluvial', 'Alluvial Soil'),
-    )
-    
     # Input parameters
     nitrogen = models.FloatField()
     phosphorus = models.FloatField()
@@ -24,11 +17,11 @@ class SoilAnalysis(models.Model):
     soil_image = models.ImageField(upload_to='soil_images/')
     
     # Analysis results
-    soil_type = models.CharField(max_length=20, choices=SOIL_TYPE_CHOICES)
+    soil_type = models.CharField(max_length=50)
     recommended_crop = models.CharField(max_length=100)
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"Soil Analysis: {self.soil_type} - {self.recommended_crop}"
+        return f"Soil Type: {self.soil_type}, Recommended Crop: {self.recommended_crop}"

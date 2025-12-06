@@ -1,23 +1,66 @@
-# Using native Python for color analysis instead of NumPy
-# import numpy as np
+# Import libraries - standard libraries, PIL, TensorFlow, and pandas
 from PIL import Image
 import io
 import os
 import logging
-import random
+import numpy as np
+import pandas as pd  # For handling the CSV file
 
 logger = logging.getLogger(__name__)
+
+# TensorFlow compatibility flag
+try:
+    import tensorflow as tf
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
 
 class SoilAnalyzer:
     """Class to analyze soil types and recommend crops"""
     
     def __init__(self):
         """Initialize the soil analyzer"""
-        logger.info("Initializing simplified soil analyzer")
-    
-    def predict_soil_type(self, image_file):
+        logger.info("Initializing soil analyzer")
+        self.use_model = TENSORFLOW_AVAILABLE
+        
+        # Create the models directory for future use
+        models_dir = os.path.join(os.path.dirname(__file__), 'models')
+        if not os.path.exists(models_dir):
+            os.makedirs(models_dir)
+            logger.info(f"Created models directory at {models_dir}")
+        
+        # Load the model if TensorFlow is available
+        self.model = None
+        if self.use_model:
+            model_path = os.path.join(models_dir, 'inceptionV3_traineddata.h5')
+            if os.path.exists(model_path):
+                try:
+                    self.model = tf.keras.models.load_model(model_path)
+                    logger.info(f"Loaded model from {model_path}")
+                except Exception as e:
+                    logger.exception(f"Failed to load model: {e}")
+                    self.use_model = False
+            else:
+                logger.warning(f"Model file not found at {model_path}")
+        
+        # Load the crop recommendation CSV file
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'Crop_recommendation.csv')
+        try:
+            self.crop_data = pd.read_csv(csv_path)
+            logger.info(f"Loaded crop recommendation data from {csv_path}")
+        except FileNotFoundError:
+            logger.error(f"Crop recommendation CSV file not found at {csv_path}. Please check the file path.")
+            self.crop_data = None
+        except PermissionError:
+            logger.error(f"Permission denied for accessing the CSV file at {csv_path}. Please check file permissions.")
+            self.crop_data = None
+        except Exception as e:
+            logger.exception(f"Failed to load crop recommendation CSV: {e}")
+            self.crop_data = None
+
+    def analyze_soil_image(self, image_file):
         """
-        Predict soil type from image using color analysis
+        Analyze the soil image using the trained model
         
         Args:
             image_file: An uploaded image file
@@ -25,49 +68,114 @@ class SoilAnalyzer:
         Returns:
             str: The predicted soil type (Red, Clay, Black, or Alluvial)
         """
+        if not self.use_model or self.model is None:
+            logger.warning("Model is not available. Cannot analyze soil image.")
+            return "Model not available"
+        
         try:
             # Open the image and preprocess it
             img = Image.open(image_file)
-            img = img.resize((224, 224))  # Resize for consistency
+            img = img.resize((224, 224))  # Resize to match the model's input size
+            img_array = np.array(img) / 255.0  # Normalize pixel values
             
-            # Convert to RGB if needed
-            if img.mode != 'RGB':
+            # Ensure the image has 3 channels (RGB)
+            if img_array.shape[-1] != 3:
+                logger.warning("Image does not have 3 channels. Converting to RGB.")
                 img = img.convert('RGB')
-                
-            # Sample pixels to calculate average color (using a subset for efficiency)
-            pixels = list(img.getdata())
-            sample_size = min(len(pixels), 1000)  # Sample up to 1000 pixels
-            sample = [pixels[i] for i in range(0, len(pixels), len(pixels)//sample_size)]
+                img_array = np.array(img) / 255.0
             
-            # Calculate average RGB
-            r_sum = sum(p[0] for p in sample)
-            g_sum = sum(p[1] for p in sample)
-            b_sum = sum(p[2] for p in sample)
+            # Add batch dimension
+            input_data = np.expand_dims(img_array, axis=0)
             
-            r_avg = r_sum / len(sample)
-            g_avg = g_sum / len(sample)
-            b_avg = b_sum / len(sample)
+            # Predict the soil type
+            predictions = self.model.predict(input_data)
+            predicted_class_index = np.argmax(predictions[0])
             
-            # Normalize to [0, 1]
-            r, g, b = r_avg / 255.0, g_avg / 255.0, b_avg / 255.0
+            # Map the index to soil types
+            soil_types = ['Red', 'Clay', 'Black', 'Alluvial']
+            predicted_soil_type = soil_types[predicted_class_index]
             
-            # Simple logic based on dominant colors
-            if r > max(g, b) + 0.1:
-                predicted_soil_type = 'Red'
-            elif abs(r - g) < 0.1 and abs(r - b) < 0.1 and max(r, g, b) < 0.5:
-                predicted_soil_type = 'Black'
-            elif b > max(r, g) + 0.05:
-                predicted_soil_type = 'Alluvial'
-            else:
-                predicted_soil_type = 'Clay'
-            
-            logger.info(f"Predicted soil type: {predicted_soil_type}")
+            logger.info(f"Model-based soil type prediction: {predicted_soil_type}")
             return predicted_soil_type
-            
         except Exception as e:
-            logger.exception(f"Error predicting soil type: {e}")
-            # Default to a common soil type if prediction fails
-            return 'Clay'
+            logger.exception(f"Error analyzing soil image: {e}")
+            return "Analysis failed"
+
+    def predict_crop(self, soil_features):
+        """
+        Predict the crop using the trained model
+        
+        Args:
+            soil_features (list): A list of soil parameters [nitrogen, phosphorus, potassium, pH, rainfall, humidity, temperature]
+        
+        Returns:
+            str: The predicted crop
+        """
+        if not self.use_model or self.model is None:
+            logger.warning("Model is not available. Cannot predict crop.")
+            return "Model not available"
+        
+        try:
+            # Prepare the input for the model
+            input_data = tf.convert_to_tensor([soil_features], dtype=tf.float32)
+            
+            # Predict the crop
+            predictions = self.model.predict(input_data)
+            predicted_crop_index = np.argmax(predictions[0])
+            
+            # Map the index to crop names (update this list based on your model's output)
+            crop_names = ['Rice', 'Wheat', 'Maize', 'Cotton', 'Sugarcane', 'Soybeans', 'Groundnut', 'Vegetables', 'Chickpea', 'Kidneybeans', 'Lentil', 'Pigeonpeas', 'Mothbeans', 'Blackgram', 'Mungbean', 'Orange', 'Pomegranate', 'Banana', 'Grapes', 'Watermelon', 'Mango', 'Muskmelon', 'Apple', 'Papaya', 'Coconut', 'Jute', 'Coffee']
+            predicted_crop = crop_names[predicted_crop_index]
+            
+            logger.info(f"Model-based crop prediction: {predicted_crop}")
+            return predicted_crop
+        except Exception as e:
+            logger.exception(f"Error during crop prediction: {e}")
+            return "Prediction failed"
+
+    def recommend_crop_from_csv(self, nitrogen, phosphorus, potassium, ph, rainfall, humidity, temperature):
+        """
+        Recommend a crop based on parameters using the CSV file
+        
+        Args:
+            nitrogen (float): Nitrogen content
+            phosphorus (float): Phosphorus content
+            potassium (float): Potassium content
+            ph (float): pH value
+            rainfall (float): Rainfall amount in mm
+            humidity (float): Humidity percentage
+            temperature (float): Temperature in celsius
+            
+        Returns:
+            str: The recommended crop
+        """
+        if self.crop_data is None:
+            logger.warning("Crop recommendation data is not available.")
+            return "Crop recommendation data not available"
+        
+        try:
+            # Filter the crop data based on the parameters
+            filtered_data = self.crop_data[
+                (self.crop_data['N'] == nitrogen) &
+                (self.crop_data['P'] == phosphorus) &
+                (self.crop_data['K'] == potassium) &
+                (self.crop_data['ph'] == ph) &
+                (self.crop_data['rainfall'] == rainfall) &
+                (self.crop_data['humidity'] == humidity) &
+                (self.crop_data['temperature'] == temperature)
+            ]
+            
+            if not filtered_data.empty:
+                # Return the first matching crop
+                recommended_crop = filtered_data.iloc[0]['label']
+                logger.info(f"Recommended crop from CSV: {recommended_crop}")
+                return recommended_crop
+            else:
+                logger.warning("No matching crop found in the CSV data.")
+                return "No matching crop found"
+        except Exception as e:
+            logger.exception(f"Error during crop recommendation from CSV: {e}")
+            return "Error during crop recommendation"
 
     def recommend_crop(self, soil_type, nitrogen, phosphorus, potassium, ph, rainfall, humidity, temperature):
         """
@@ -86,74 +194,13 @@ class SoilAnalyzer:
         Returns:
             str: The recommended crop
         """
-        # Soil type specific crops
-        soil_crops = {
-            'Red': ['Groundnut', 'Potato', 'Cotton', 'Maize'],
-            'Clay': ['Rice', 'Wheat', 'Sugarcane', 'Oats'],
-            'Black': ['Cotton', 'Soybeans', 'Sugarcane', 'Wheat'],
-            'Alluvial': ['Rice', 'Maize', 'Wheat', 'Vegetables']
-        }
+        # If the model is available, use it for prediction
+        if self.use_model and self.model:
+            soil_features = [nitrogen, phosphorus, potassium, ph, rainfall, humidity, temperature]
+            return self.predict_crop(soil_features)
         
-        # Get initial crop selection based on soil type
-        potential_crops = soil_crops.get(soil_type, ['Maize', 'Wheat'])
-        
-        # Refine selection based on NPK values
-        npk_score = {}
-        for crop in potential_crops:
-            if crop in ['Rice', 'Wheat']:
-                # These crops need high N
-                n_factor = 1.0 if nitrogen > 40 else 0.5
-            elif crop in ['Cotton', 'Sugarcane']:
-                # These crops need balanced NPK
-                n_factor = 1.0 if (30 <= nitrogen <= 60) else 0.5
-            elif crop in ['Groundnut', 'Soybeans']:
-                # Legumes need less N but more P and K
-                n_factor = 1.0 if nitrogen < 40 else 0.7
-            else:
-                n_factor = 0.8
-                
-            # Factor in pH preferences
-            if crop in ['Potato', 'Maize']:
-                # Prefer slightly acidic soil
-                ph_factor = 1.0 if 5.5 <= ph <= 6.5 else 0.6
-            elif crop in ['Rice']:
-                # Can tolerate more acidic conditions
-                ph_factor = 1.0 if 5.0 <= ph <= 6.5 else 0.7
-            elif crop in ['Cotton', 'Wheat']:
-                # Prefer neutral to slightly alkaline
-                ph_factor = 1.0 if 6.5 <= ph <= 8.0 else 0.6
-            else:
-                ph_factor = 1.0 if 6.0 <= ph <= 7.5 else 0.7
-                
-            # Factor in climate preferences
-            if crop in ['Rice']:
-                # Needs high rainfall and humidity
-                climate_factor = 1.0 if rainfall > 150 and humidity > 60 else 0.5
-            elif crop in ['Cotton']:
-                # Prefers warm and dry conditions
-                climate_factor = 1.0 if temperature > 25 and humidity < 60 else 0.7
-            elif crop in ['Wheat']:
-                # Prefers cooler temperatures
-                climate_factor = 1.0 if temperature < 25 else 0.6
-            elif crop in ['Sugarcane']:
-                # Needs warm and humid conditions
-                climate_factor = 1.0 if temperature > 20 and humidity > 50 else 0.7
-            else:
-                climate_factor = 0.8
-                
-            # Calculate overall score
-            npk_score[crop] = n_factor * ph_factor * climate_factor
-        
-        # Find the crop with the highest score
-        max_score = -1
-        recommended_crop = potential_crops[0]  # Default to first crop
-        
-        for crop, score in npk_score.items():
-            if score > max_score:
-                max_score = score
-                recommended_crop = crop
-        
-        return recommended_crop
+        # Fallback to CSV-based recommendation if the model is not available
+        return self.recommend_crop_from_csv(nitrogen, phosphorus, potassium, ph, rainfall, humidity, temperature)
 
     def analyze_parameters(self, nitrogen, phosphorus, potassium, ph, rainfall, humidity, temperature):
         """
@@ -164,9 +211,9 @@ class SoilAnalyzer:
             phosphorus (float): Phosphorus content
             potassium (float): Potassium content
             ph (float): pH value
-            rainfall (float): Rainfall amount in mm
+            rainfall (dfloat): Rainfall amount in mm
             humidity (float): Humidity percentage
-            temperature (float): Temperature in celsius
+            temperature (float):Temperature in celsius
             
         Returns:
             dict: Analysis of each parameter
