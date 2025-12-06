@@ -1,27 +1,19 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "backend/manage.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "backend/soil_analysis/wsgi.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend"
-    }
-  ],
+  "buildCommand": "npm install --prefix frontend && npm run build --prefix frontend && pip install -r backend/requirements.txt",
+  "outputDirectory": "frontend/build",
   "env": {
     "DJANGO_SETTINGS_MODULE": "soil_analysis.settings",
     "PYTHONUNBUFFERED": "1"
-  }
+  },
+  "routes": [
+    {
+      "src": "^/api/(.*)",
+      "dest": "backend/soil_analysis/wsgi.py"
+    },
+    {
+      "src": "^/(.*)",
+      "dest": "frontend/build/$1"
+    }
+  ]
 }
